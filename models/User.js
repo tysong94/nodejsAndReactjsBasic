@@ -49,9 +49,20 @@ userSchema.pre('save', function ( next ) {
             })
         })
 
+    } else { // 비밀번호가 변경되지 않았을 때에도 넘어가야 함.
+        next();
     }
 
 })
+
+// userSchema에 메소드 만들기
+userSchema.methods.comparePassword = function(plainPassword, callback) {
+    //plainPassword를 암호화해서 db와 비교(bcrypt 패스워드 사용)
+    bcrypt.compare(plainPassword, this.password, function(err, isMatch) {
+        if(err) return callback(err),
+        callback(null, isMatch)
+    })
+}
 
 const User = mongoose.model('User', userSchema);
 
