@@ -9,6 +9,8 @@ app.use(bodyParser.json()); //application/json 형태의 데이터 받아줌
 const cookieParser = require('cookie-parser')
 app.use(cookieParser())
 
+// import
+const { auth } = require("./middleware/auth")
 const { User } = require("./models/User");
 
 const config = require('./config/key');
@@ -24,7 +26,7 @@ app.get('/', (req, res) => res.send('Hello World! 안녕하세요!!!'))
     
 //Register Route
 
-app.post('/register', (req, res) => {
+app.post('/api/users/register', (req, res) => {
     const user = new User(req.body)
 
     user.save((err, userInfo) => {
@@ -41,7 +43,7 @@ app.post('/register', (req, res) => {
     })
 })
 
-app.post('/login', (req, res) => {
+app.post('/api/users/login', (req, res) => {
     console.log(req)
     
     // 요청된 이메일이 데이터베이스에 있는지 찾는다
@@ -82,6 +84,30 @@ app.post('/login', (req, res) => {
             })
         })
         
+    })
+})
+
+// endpoint, auth : 미들웨어(콜백함수 호출 전 실행), 콜백함수
+app.get('/api/users/auth', auth, (req, res) => {
+    // 콜백까지 왔다는 것은 authentication을 통과했다는 것.
+    res.status(200).json({
+        _id: req.user._id,
+        isAdmin: req.user.role === 0 ? true : false, // role이 0이면 관리자.
+        isAuth: true,
+        email: req.user.email,
+        name: req.user.name,
+        lastname: req.user.lastname,
+        role: req.user.role,
+        image: req.user.image
+    })
+})
+
+app.get('/api/users/logout', auth, (req, res) => {
+    User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, user) => {
+        if(err) return res.json({ success: false, err})
+        return res.status(200).send({
+            success: true
+        })
     })
 })
 
