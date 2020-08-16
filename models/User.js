@@ -1,6 +1,8 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const mongoose = require('mongoose')
+const bcrypt = require('bcrypt')
 const saltRounds = 10
+const jwt = require('jsonwebtoken')
+const { Router } = require('express')
 
 const userSchema = mongoose.Schema({
     name: {
@@ -55,15 +57,34 @@ userSchema.pre('save', function ( next ) {
 
 })
 
-// userSchema에 메소드 만들기
+// userSchema에 comparePassword 메소드 만들기
 userSchema.methods.comparePassword = function(plainPassword, callback) {
     //plainPassword를 암호화해서 db와 비교(bcrypt 패스워드 사용)
     bcrypt.compare(plainPassword, this.password, function(err, isMatch) {
-        if(err) return callback(err),
+        if(err) return callback(err)
         callback(null, isMatch)
     })
 }
 
+// userSchema에 generateToken 메소드 만들기
+userSchema.methods.generateToken = function(callback) {
+    var user = this;
+
+    //jsonwebtoken을 이용해서 toeken을 생성하기.
+    //user._id + 'secretToken' = token
+    //secretToken을 넣으면 user._id가 나옴
+    var token = jwt.sign(user._id.toHexString(), 'secretToken')
+
+    user.token = token
+    user.save(function(err, user) {
+        if(err) return callback(err)
+        callback(null, user)
+    })
+
+}
+
+
+//    
 const User = mongoose.model('User', userSchema);
 
 // 해당 상수를 다른 곳에서도 사용할 수 있도록 함.
